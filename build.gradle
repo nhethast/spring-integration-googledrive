@@ -1,0 +1,148 @@
+// wrapper support
+task wrapper(type: Wrapper) {
+}
+
+description = 'Spring Integration Google Drive Support'
+
+// jar support
+apply plugin: 'java'
+// ?
+apply plugin: 'eclipse'
+
+repositories {
+	maven { url 'http://repo.spring.io/libs-snapshot' }
+	maven { url 'http://repo.spring.io/libs-milestone' }
+	maven { url 'http://repo.spring.io/plugins-release' }
+	mavenCentral()
+}
+
+ext {
+	springVersion = '4.0.2.RELEASE'
+	springIntegrationVersion = '4.0.0.M3'
+	hamcrestVersion = '1.3'
+	junitVersion = '4.11'
+	log4jVersion = '1.2.17'
+	mockitoVersion = '1.9.5'
+}
+
+group = 'nhethast.org.springframework.integration'
+
+ext.javadocLinks = [
+	'http://docs.oracle.com/javase/7/docs/api/',
+	'http://docs.oracle.com/javaee/6/api/',
+	'http://docs.spring.io/spring/docs/current/javadoc-api/'
+] as String[]
+
+sourceCompatibility=1.6
+targetCompatibility=1.6
+
+eclipse {
+	project {
+		natures += 'org.springframework.ide.eclipse.core.springnature'
+	}
+}
+
+dependencies {
+	compile "org.springframework.integration:spring-integration-core:$springIntegrationVersion"
+	compile "org.springframework.integration:spring-integration-file:$springIntegrationVersion"
+	compile "org.springframework.integration:spring-integration-stream:$springIntegrationVersion"
+	compile "org.springframework:spring-context-support:$springVersion"
+	// taken from http://code.google.com/p/google-api-java-client/source/browse/drive-cmdline-sample/pom.xml?repo=samples
+	// taken start
+	compile "com.google.apis:google-api-services-drive:v2-rev119-1.17.0-rc"
+	compile "com.google.http-client:google-http-client:1.17.0-rc"
+	compile "com.google.http-client:google-http-client-jackson2:1.17.0-rc"
+	compile "com.google.oauth-client:google-oauth-client-jetty:1.17.0-rc"
+	// taken end
+	compile "org.slf4j:slf4j-api:1.7.6"
+	compile "javax.ws.rs:javax.ws.rs-api:2.0-m10"
+	testCompile "junit:junit:$junitVersion"
+	testCompile "log4j:log4j:$log4jVersion"
+	testCompile "org.hamcrest:hamcrest-all:$hamcrestVersion"
+	testCompile "org.mockito:mockito-all:$mockitoVersion"
+	testCompile "org.springframework:spring-test:$springVersion"
+	testCompile "org.springframework.integration:spring-integration-test:$springIntegrationVersion"
+    testCompile group: 'junit', name: 'junit', version: '4.+'
+	testRuntime "org.slf4j:slf4j-log4j12:1.7.6"
+	testRuntime "org.slf4j:jcl-over-slf4j:1.7.6"
+	testRuntime "org.slf4j:jul-to-slf4j:1.7.6"
+}
+
+task sourcesJar(type: Jar) {
+	classifier = 'sources'
+	from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar) {
+	classifier = 'javadoc'
+	from javadoc
+}
+
+artifacts {
+	archives sourcesJar
+	archives javadocJar
+}
+
+// maven module creation support
+apply plugin: 'maven'
+
+ext.optionalDeps = []
+ext.providedDeps = []
+
+ext.optional = { optionalDeps << it }
+ext.provided = { providedDeps << it }
+
+install {
+	repositories.mavenInstaller {
+		customizePom(pom, project)
+	}
+}
+
+def customizePom(pom, gradleProject) {
+	pom.whenConfigured { generatedPom ->
+		// respect 'optional' and 'provided' dependencies
+		gradleProject.optionalDeps.each { dep ->
+			generatedPom.dependencies.find { it.artifactId == dep.name }?.optional = true
+		}
+		gradleProject.providedDeps.each { dep ->
+			generatedPom.dependencies.find { it.artifactId == dep.name }?.scope = 'provided'
+		}
+
+		// eliminate test-scoped dependencies (no need in maven central poms)
+		generatedPom.dependencies.removeAll { dep ->
+			dep.scope == 'test'
+		}
+
+		// add all items necessary for maven central publication
+		generatedPom.project {
+			name = gradleProject.description
+			description = gradleProject.description
+//			url = linkHomepage
+			licenses {
+				license {
+					name 'The Apache Software License, Version 2.0'
+					url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+					distribution 'repo'
+				}
+			}
+
+//			scm {
+//				url = linkScmUrl
+//				connection = 'scm:git:' + linkScmConnection
+//				developerConnection = 'scm:git:' + linkScmDevConnection
+//			}
+
+//			issueManagement {
+//				system = "GitHub"
+//				url = linkIssue
+//			}
+
+			developers {
+				developer {
+					id = 'simontankersley'
+					name = 'Simon Tankersley'
+				}
+			}
+		}
+	}
+}

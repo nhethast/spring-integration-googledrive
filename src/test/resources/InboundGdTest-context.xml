@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-file="http://www.springframework.org/schema/integration/file"
+	xmlns:int-gd="https://github.com/nhethast/spring-integration-googledrive"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.0.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-4.0.xsd
+		https://github.com/nhethast/spring-integration-googledrive https://raw.githubusercontent.com/nhethast/spring-integration-googledrive/master/src/main/resources/nhethast/org/springframework/integration/googledrive/config/spring-integration-googledrive-1.0.xsd">
+	
+	<bean id="credentialManager" class="nhethast.org.springframework.integration.googledrive.session.CredentialManager">
+		<property name="authFlowTimeout" value="120000" />
+		<property name="authUrlChannel" ref="authChannel"/>
+		<property name="clientSecretsJson" value="file:client_secrets.json" />
+		<property name="dataStoreDirectory" value="file:." />
+		<property name="host" value="localhost"/>
+		<property name="path" value="IOJFOWIHGOW"/>
+		<property name="port" value="8080"/>
+	</bean>
+	
+	<bean id="gdSessionFactory"
+		class="nhethast.org.springframework.integration.googledrive.session.DefaultGdSessionFactory">
+		<property name="credentialManager" ref="credentialManager" />
+		<property name="authTimeout" value="10000"/>
+		<property name="email" value="ticheryonschardogric@gmail.com" />
+		<property name="useTitleAndId" value="true" />
+	</bean>
+
+	<bean id="filter" class="nhethast.org.springframework.integration.googledrive.filters.GdPersistentAcceptOnceFileListFilter">
+		<constructor-arg><bean class="org.springframework.integration.metadata.SimpleMetadataStore" /></constructor-arg>
+		<constructor-arg value="seenfile"/>
+	</bean>
+
+	<int-gd:inbound-channel-adapter
+				channel="inputChannel"
+				session-factory="gdSessionFactory"
+				charset="UTF-8"
+				auto-create-local-directory="true"
+				delete-remote-files="false"
+				local-directory="input-local"
+				remote-directory="Reconciliator Feed Upload"
+				preserve-timestamp="true"
+				filter="filter"
+				local-filename-generator-expression="#this + '-' + T(java.lang.System).currentTimeMillis()">
+			<int:poller fixed-delay="10000"/>
+	</int-gd:inbound-channel-adapter>
+
+	<int:channel id="inputChannel" />
+	
+	<int-file:file-to-string-transformer input-channel="inputChannel" output-channel="inputContentChannel" delete-files="true" charset="UTF-8"/>
+
+	<int:channel id="inputContentChannel" />
+	
+	<int:logging-channel-adapter channel="inputContentChannel" level="INFO" logger-name="gdChannel"/>
+
+	<int:channel id="authChannel" />
+	
+	<int:logging-channel-adapter channel="authChannel" level="INFO" logger-name="gdChannel" expression="payload"/>
+
+</beans>
