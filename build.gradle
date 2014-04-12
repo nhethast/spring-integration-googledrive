@@ -144,7 +144,7 @@ uploadArchives {
 			// date based artefact names
 			// uniqueVersion = false
 			configureAuth = {
-				authentication(userName: "simontankersley@gmail.com", password: "87sgCRUc")
+				authentication(userName: "tagbu", password: "87sgCRUc")
 			}
 			configuration = configurations.deployerJars
 			snapshotRepository(url: "dav:https://repository-eodfo.forge.cloudbees.com/snapshot/", configureAuth)
