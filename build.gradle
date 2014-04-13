@@ -144,11 +144,11 @@ uploadArchives {
 			// date based artefact names
 			// uniqueVersion = false
 			configureAuth = {
-				authentication(userName: "tagbu", password: "87sgCRUc")
+				authentication(userName: cloudbeesUsername, password: cloudbeesPassword)
 			}
 			configuration = configurations.deployerJars
-			snapshotRepository(url: "dav:https://repository-eodfo.forge.cloudbees.com/snapshot/", configureAuth)
-			repository(url: "dav:https://repository-eodfo.forge.cloudbees.com/release/", configureAuth)
+			snapshotRepository(url: "dav:https://repository-" + cloudbeesDomainId + ".forge.cloudbees.com/snapshot/", configureAuth)
+			repository(url: "dav:https://repository-" + cloudbeesDomainId + ".forge.cloudbees.com/release/", configureAuth)
 			customizePom(pom, project)
 		}
     }
